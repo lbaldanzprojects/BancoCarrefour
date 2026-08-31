@@ -12,6 +12,7 @@ using Opah.BancoCarrefour.Api.Features.Lancamentos.Create;
 using Opah.BancoCarrefour.Api.Features.Lancamentos.Delete;
 using Opah.BancoCarrefour.Api.Features.Lancamentos.Get;
 using Opah.BancoCarrefour.Api.Features.Lancamentos.Update;
+using Opah.BancoCarrefour.Domain.Enums;
 
 namespace Opah.BancoCarrefour.Api.Controllers
 {
@@ -216,11 +217,25 @@ namespace Opah.BancoCarrefour.Api.Controllers
         [HttpGet("list")]
         [ProducesResponseType(typeof(PaginatedResponse<GetLancamentosResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> ListLancamentosAsync([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> ListLancamentosAsync(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] DateTime? dataInicio = null,
+            [FromQuery] DateTime? dataFim = null,
+            [FromQuery] TipoLancamento? tipo = null,
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Listando todos os lançamentos.");
 
-            var command = new ListLancamentosCommand();
+            if (dataInicio.HasValue && dataFim.HasValue && dataInicio > dataFim)
+                return BadRequest("Data de início não pode ser posterior à data de fim.");
+
+            var command = new ListLancamentosCommand
+            {
+                DataInicio = dataInicio,
+                DataFim = dataFim,
+                Tipo = tipo
+            };
             var response = await _mediator.Send(command, cancellationToken);
             var result = _mapper.Map<IEnumerable<GetLancamentosResponse>>(response).AsQueryable();
             var paginatedList = await PaginatedList<GetLancamentosResponse>.GetAsync(result, pageNumber, pageSize);

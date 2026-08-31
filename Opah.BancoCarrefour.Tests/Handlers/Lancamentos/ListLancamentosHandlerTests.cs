@@ -54,4 +54,44 @@ public class ListLancamentosHandlerTests
 
         Assert.Empty(resultado);
     }
+
+    [Fact]
+    public async Task Handle_ComFiltroDePeriodo_DeveChamarQueryFiltradaENaoAGetAllSemFiltro()
+    {
+        var entidades = new List<LancamentosEntity?>
+        {
+            new() { Id = Guid.NewGuid(), Valor = 10m, Tipo = TipoLancamento.Credito, Descricao = "A", DataLancamento = DateTime.UtcNow }
+        };
+
+        var resultadosEsperados = entidades.Select(e => new GetLancamentosResult { Id = e!.Id, Valor = e.Valor }).ToList();
+
+        _queryMock.Setup(q => q.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<LancamentosEntity, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(entidades);
+        _mapperMock.Setup(m => m.Map<IEnumerable<GetLancamentosResult>>(entidades)).Returns(resultadosEsperados);
+
+        var handler = CriarHandler();
+        var command = new ListLancamentosCommand { DataInicio = DateTime.UtcNow.AddDays(-7), DataFim = DateTime.UtcNow };
+
+        var resultado = await handler.Handle(command, CancellationToken.None);
+
+        Assert.Equal(resultadosEsperados, resultado);
+        _queryMock.Verify(q => q.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<LancamentosEntity, bool>>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _queryMock.Verify(q => q.GetAllAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ComFiltroDeTipo_DeveChamarQueryFiltrada()
+    {
+        _queryMock.Setup(q => q.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<LancamentosEntity, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<LancamentosEntity?>());
+        _mapperMock.Setup(m => m.Map<IEnumerable<GetLancamentosResult>>(It.IsAny<IEnumerable<LancamentosEntity?>>()))
+            .Returns(Enumerable.Empty<GetLancamentosResult>());
+
+        var handler = CriarHandler();
+        var command = new ListLancamentosCommand { Tipo = TipoLancamento.Debito };
+
+        await handler.Handle(command, CancellationToken.None);
+
+        _queryMock.Verify(q => q.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<LancamentosEntity, bool>>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

@@ -53,4 +53,28 @@ public class ListSaldoDiarioHandlerTests
 
         Assert.Empty(resultado);
     }
+
+    [Fact]
+    public async Task Handle_ComFiltroDePeriodo_DeveChamarQueryFiltradaENaoAGetAllSemFiltro()
+    {
+        var entidades = new List<SaldoDiarioEntity?>
+        {
+            new() { Id = Guid.NewGuid(), Data = DateTime.UtcNow.Date, TotalCreditos = 500m, TotalDebitos = 100m, SaldoConsolidado = 400m }
+        };
+
+        var resultadosEsperados = entidades.Select(e => new GetSaldoDiarioResult { Id = e!.Id, SaldoConsolidado = e.SaldoConsolidado }).ToList();
+
+        _queryMock.Setup(q => q.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<SaldoDiarioEntity, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(entidades);
+        _mapperMock.Setup(m => m.Map<IEnumerable<GetSaldoDiarioResult>>(entidades)).Returns(resultadosEsperados);
+
+        var handler = CriarHandler();
+        var command = new ListSaldoDiarioCommand { DataInicio = DateTime.UtcNow.Date.AddDays(-7), DataFim = DateTime.UtcNow.Date };
+
+        var resultado = await handler.Handle(command, CancellationToken.None);
+
+        Assert.Equal(resultadosEsperados, resultado);
+        _queryMock.Verify(q => q.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<SaldoDiarioEntity, bool>>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _queryMock.Verify(q => q.GetAllAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

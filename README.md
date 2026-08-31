@@ -152,11 +152,11 @@ A API roda a migration do banco automaticamente ao iniciar (`app.ApplyMigrations
 - `PUT /update` — atualiza um lançamento existente
 - `DELETE /delete?id={guid}` — remove um lançamento
 - `GET /get/{id}` — busca por Id
-- `GET /list?pageNumber=&pageSize=` — lista paginada
+- `GET /list?pageNumber=&pageSize=&dataInicio=&dataFim=&tipo=` — lista paginada, com filtro opcional por período e por tipo (1 = crédito, 2 = débito). O filtro é aplicado como `WHERE` na query (via `IQueryable`/LINQ do EF Core), não em memória.
 
 **`SaldoDiarioController`** (`/api/SaldoDiario`) — **somente leitura**
 - `GET /get/{id}` — busca um saldo consolidado por Id
-- `GET /list?pageNumber=&pageSize=` — lista paginada
+- `GET /list?pageNumber=&pageSize=&dataInicio=&dataFim=` — lista paginada, com filtro opcional por período (mesmo princípio: `WHERE` na query, não em memória)
 
 Não há `create`/`update`/`delete` para `SaldoDiario` por decisão de design: o saldo é uma entidade derivada, consolidada automaticamente pelo `SaldoDiarioConsolidadorConsumer` a partir dos lançamentos (ver seção abaixo). Expor CRUD manual permitiria sobrescrever um valor que deveria ser sempre o resultado do cálculo, contradizendo a própria consolidação delta-based/idempotente do worker.
 
@@ -248,4 +248,4 @@ Itens conscientemente deixados de fora do escopo, documentados aqui conforme sug
 - **Concorrência no consumer**: o `SaldoDiarioConsolidadorConsumer` processa mensagens sequencialmente (uma por vez) por design, o que evita condições de corrida no incremento do saldo sem precisar de lock otimista. Para escalar horizontalmente com múltiplas instâncias do worker consumindo a mesma fila, o incremento do saldo precisaria virar um `UPDATE` atômico (`ExecuteUpdateAsync`) ou usar controle de concorrência otimista (`RowVersion`).
 - **Update de Lançamento via CRUD manual**: o handler de `Update` faz um "overwrite" completo do registro a partir do que veio na requisição, sem buscar o estado atual antes. Funciona porque o validator exige todos os campos, mas não há controle de concorrência (`RowVersion`) contra edições concorrentes.
 - **Entidades de domínio mais ricas**: `LancamentosEntity`/`SaldoDiarioEntity` hoje são modelos anêmicos (bags de propriedades); as regras de negócio vivem inteiramente no FluentValidation da camada de Application. Uma evolução natural seria mover invariantes básicas (ex.: `Valor > 0`) para dentro da própria entidade.
-- **Endpoint de consulta por data**: hoje o `SaldoDiarioController` só busca por Id. Um `GET /api/SaldoDiario/data/{data}` seria mais natural para o caso de uso real do lojista do que buscar por Guid.
+- **Endpoint de consulta por data única**: o filtro por período (`dataInicio`/`dataFim`) já existe no `GET /list` de ambos os controllers. Falta um atalho tipo `GET /api/SaldoDiario/data/{data}` para o caso comum de "só o saldo de hoje", em vez de sempre montar o período manualmente.

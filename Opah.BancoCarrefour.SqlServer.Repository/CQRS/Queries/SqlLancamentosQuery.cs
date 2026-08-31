@@ -1,6 +1,7 @@
 using Opah.BancoCarrefour.Domain.Ports.Repositorios;
 using Microsoft.EntityFrameworkCore;
 using Opah.BancoCarrefour.Domain.Entidades;
+using System.Linq.Expressions;
 
 namespace Opah.BancoCarrefour.SqlServer.Repository.CQRS.Queries;
 
@@ -27,6 +28,11 @@ public class SqlLancamentosQuery : IQuery<LancamentosEntity>
 
     public async Task<IEnumerable<LancamentosEntity?>> GetAllAsync(CancellationToken cancellationToken)
         => await _context.Lancamentos
+            .ToListAsync(cancellationToken);
+
+    public async Task<IEnumerable<LancamentosEntity?>> GetAllAsync(Expression<Func<LancamentosEntity, bool>> filtro, CancellationToken cancellationToken)
+        => await _context.Lancamentos
+            .Where(filtro)
             .ToListAsync(cancellationToken);
 
     #endregion
