@@ -1,0 +1,154 @@
+### Variáveis
+@baseUrl = http://localhost:8080
+
+### =====================================================================
+### 1. Crédito simples — HOJE
+### Cenário: caso feliz básico. Confira depois: Lancamentos, OutboxMessages
+### (ProcessedAt nulo -> preenchido em ~3-5s), SaldoDiario, ProcessedEvents.
+### =====================================================================
+POST {{baseUrl}}/api/Lancamentos/create
+Content-Type: application/json
+
+{
+  "valor": 150.00,
+  "tipo": 1,
+  "descricao": "Venda balcão - cliente 001",
+  "dataLancamento": "2026-08-30T10:00:00Z"
+}
+
+### =====================================================================
+### 2. Débito simples — HOJE
+### =====================================================================
+POST {{baseUrl}}/api/Lancamentos/create
+Content-Type: application/json
+
+{
+  "valor": 80.00,
+  "tipo": 2,
+  "descricao": "Pagamento fornecedor - insumos",
+  "dataLancamento": "2026-08-30T11:00:00Z"
+}
+
+### =====================================================================
+### 3. Segundo crédito — MESMO DIA (testa acumulação no SaldoDiario)
+### Depois do 1 e 3 juntos: TotalCreditos deve ser 150.00 + 200.00 = 350.00
+### =====================================================================
+POST {{baseUrl}}/api/Lancamentos/create
+Content-Type: application/json
+
+{
+  "valor": 200.00,
+  "tipo": 1,
+  "descricao": "Venda balcão - cliente 002",
+  "dataLancamento": "2026-08-30T14:30:00Z"
+}
+
+### =====================================================================
+### 4. Segundo débito — MESMO DIA (testa acumulação, valor quebrado)
+### =====================================================================
+POST {{baseUrl}}/api/Lancamentos/create
+Content-Type: application/json
+
+{
+  "valor": 45.50,
+  "tipo": 2,
+  "descricao": "Compra de material de limpeza",
+  "dataLancamento": "2026-08-30T16:15:00Z"
+}
+
+### =====================================================================
+### 5. Crédito — DIA ANTERIOR
+### Cenário: confirma que a consolidação usa a DATA DO LANÇAMENTO, e não
+### a data em que o worker processou a mensagem. Deve gerar/atualizar uma
+### linha DIFERENTE em SaldoDiario (a de ontem), não misturar com a de hoje.
+### =====================================================================
+POST {{baseUrl}}/api/Lancamentos/create
+Content-Type: application/json
+
+{
+  "valor": 300.00,
+  "tipo": 1,
+  "descricao": "Venda balcão (dia anterior)",
+  "dataLancamento": "2026-08-29T09:00:00Z"
+}
+
+### =====================================================================
+### 6. Débito — DIA ANTERIOR
+### =====================================================================
+POST {{baseUrl}}/api/Lancamentos/create
+Content-Type: application/json
+
+{
+  "valor": 120.75,
+  "tipo": 2,
+  "descricao": "Pagamento de energia (dia anterior)",
+  "dataLancamento": "2026-08-29T13:20:00Z"
+}
+
+### =====================================================================
+### 7. Crédito de valor alto
+### Cenário: testa decimal(18,2) com valor grande, sem overflow/truncagem.
+### =====================================================================
+POST {{baseUrl}}/api/Lancamentos/create
+Content-Type: application/json
+
+{
+  "valor": 5000.00,
+  "tipo": 1,
+  "descricao": "Recebimento de contrato grande",
+  "dataLancamento": "2026-08-30T09:45:00Z"
+}
+
+### =====================================================================
+### 8. Crédito com centavos "quebrados"
+### Cenário: testa arredondamento/precisão decimal (não pode virar 20.00
+### nem 19.9899999...).
+### =====================================================================
+POST {{baseUrl}}/api/Lancamentos/create
+Content-Type: application/json
+
+{
+  "valor": 19.99,
+  "tipo": 1,
+  "descricao": "Venda avulsa",
+  "dataLancamento": "2026-08-30T17:50:00Z"
+}
+
+### =====================================================================
+### 9. INVÁLIDO — Valor zero
+### Esperado: 400 Bad Request, sem gravar nada em Lancamentos nem Outbox.
+### =====================================================================
+POST {{baseUrl}}/api/Lancamentos/create
+Content-Type: application/json
+
+{
+  "valor": 0,
+  "tipo": 1,
+  "descricao": "Lançamento inválido - valor zero",
+  "dataLancamento": "2026-08-30T18:00:00Z"
+}
+
+### =====================================================================
+### 10. INVÁLIDO — Descrição vazia
+### Esperado: 400 Bad Request, sem gravar nada em Lancamentos nem Outbox.
+### =====================================================================
+POST {{baseUrl}}/api/Lancamentos/create
+Content-Type: application/json
+
+{
+  "valor": 50.00,
+  "tipo": 2,
+  "descricao": "",
+  "dataLancamento": "2026-08-30T18:10:00Z"
+}
+
+### =====================================================================
+### Consultas de apoio (rodar depois dos POSTs acima)
+### =====================================================================
+
+### Lista todos os lançamentos
+GET {{baseUrl}}/api/Lancamentos/list?pageNumber=1&pageSize=20
+
+### Lista todos os saldos diários (consolidados automaticamente pelo
+### consumer a partir dos lançamentos acima — pode levar alguns segundos)
+GET {{baseUrl}}/api/SaldoDiario/list?pageNumber=1&pageSize=20

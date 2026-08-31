@@ -1,0 +1,12 @@
+[
+  { "valor": 150.00, "tipo": 1, "descricao": "Venda balcão - cliente 001", "dataLancamento": "2026-08-30T10:00:00Z" },
+  { "valor": 80.00, "tipo": 2, "descricao": "Pagamento fornecedor - insumos", "dataLancamento": "2026-08-30T11:00:00Z" },
+  { "valor": 200.00, "tipo": 1, "descricao": "Venda balcão - cliente 002", "dataLancamento": "2026-08-30T14:30:00Z" },
+  { "valor": 45.50, "tipo": 2, "descricao": "Compra de material de limpeza", "dataLancamento": "2026-08-30T16:15:00Z" },
+  { "valor": 300.00, "tipo": 1, "descricao": "Venda balcão (dia anterior)", "dataLancamento": "2026-08-29T09:00:00Z" },
+  { "valor": 120.75, "tipo": 2, "descricao": "Pagamento de energia (dia anterior)", "dataLancamento": "2026-08-29T13:20:00Z" },
+  { "valor": 5000.00, "tipo": 1, "descricao": "Recebimento de contrato grande", "dataLancamento": "2026-08-30T09:45:00Z" },
+  { "valor": 19.99, "tipo": 1, "descricao": "Venda avulsa", "dataLancamento": "2026-08-30T17:50:00Z" },
+  { "valor": 0, "tipo": 1, "descricao": "Lançamento inválido - valor zero", "dataLancamento": "2026-08-30T18:00:00Z" },
+  { "valor": 50.00, "tipo": 2, "descricao": "", "dataLancamento": "2026-08-30T18:10:00Z" }
+]
