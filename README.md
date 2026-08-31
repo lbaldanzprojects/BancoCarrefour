@@ -160,6 +160,29 @@ A API roda a migration do banco automaticamente ao iniciar (`app.ApplyMigrations
 
 Não há `create`/`update`/`delete` para `SaldoDiario` por decisão de design: o saldo é uma entidade derivada, consolidada automaticamente pelo `SaldoDiarioConsolidadorConsumer` a partir dos lançamentos (ver seção abaixo). Expor CRUD manual permitiria sobrescrever um valor que deveria ser sempre o resultado do cálculo, contradizendo a própria consolidação delta-based/idempotente do worker.
 
+### Como passar o filtro de período
+
+`dataInicio` e `dataFim` são query params opcionais, aceitos em formato ISO 8601 (`yyyy-MM-dd` ou `yyyy-MM-ddTHH:mm:ssZ`) — o model binding padrão do ASP.NET Core faz o parse automaticamente. Os dois são independentes: dá pra informar só um dos dois (ex.: só `dataInicio` retorna tudo a partir daquela data em diante).
+
+```
+# Lançamentos de um dia específico
+GET /api/Lancamentos/list?dataInicio=2026-08-30&dataFim=2026-08-30
+
+# Lançamentos da última semana
+GET /api/Lancamentos/list?dataInicio=2026-08-24&dataFim=2026-08-31
+
+# Só os débitos de agosto
+GET /api/Lancamentos/list?dataInicio=2026-08-01&dataFim=2026-08-31&tipo=2
+
+# Tudo a partir de uma data, sem limite superior
+GET /api/Lancamentos/list?dataInicio=2026-08-29
+
+# Saldo diário consolidado de uma semana
+GET /api/SaldoDiario/list?dataInicio=2026-08-24&dataFim=2026-08-31
+```
+
+Se `dataInicio` for posterior a `dataFim`, a API responde `400 Bad Request` em vez de simplesmente devolver uma lista vazia.
+
 ---
 
 ## Fluxo de consolidação assíncrona — quando a fila entra em ação

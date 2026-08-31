@@ -152,3 +152,16 @@ GET {{baseUrl}}/api/Lancamentos/list?pageNumber=1&pageSize=20
 ### Lista todos os saldos diários (consolidados automaticamente pelo
 ### consumer a partir dos lançamentos acima — pode levar alguns segundos)
 GET {{baseUrl}}/api/SaldoDiario/list?pageNumber=1&pageSize=20
+
+### =====================================================================
+### Consultas com filtro de período (rodar depois dos POSTs acima)
+### =====================================================================
+
+### Lançamentos de um dia específico (30/08)
+GET {{baseUrl}}/api/Lancamentos/list?dataInicio=2026-08-30&dataFim=2026-08-30
+
+### Só os débitos do período
+GET {{baseUrl}}/api/Lancamentos/list?dataInicio=2026-08-29&dataFim=2026-08-30&tipo=2
+
+### Saldo diário consolidado do período
+GET {{baseUrl}}/api/SaldoDiario/list?dataInicio=2026-08-29&dataFim=2026-08-30
