@@ -36,13 +36,23 @@ public class ListSaldoDiarioHandler : IRequestHandler<ListSaldoDiarioCommand, IE
     {
         _logger.LogInformation("Iniciando o processo de listagem dos saldos diários.");
 
-        var entity = await _query.GetAllAsync(cancellationToken);
+        var possuiFiltro = command.DataInicio.HasValue || command.DataFim.HasValue;
+
+        var entity = possuiFiltro
+            ? await _query.GetAllAsync(MontarFiltro(command), cancellationToken)
+            : await _query.GetAllAsync(cancellationToken);
+
         var result = _mapper.Map<IEnumerable<GetSaldoDiarioResult>>(entity);
 
         _logger.LogInformation("Listagem de saldos diários concluída com {Count} registros encontrados.", result.Count());
 
         return result;
     }
+
+    private static System.Linq.Expressions.Expression<Func<SaldoDiarioEntity, bool>> MontarFiltro(ListSaldoDiarioCommand command)
+        => e =>
+            (!command.DataInicio.HasValue || e.Data >= command.DataInicio.Value) &&
+            (!command.DataFim.HasValue || e.Data <= command.DataFim.Value);
 
     #endregion
 }

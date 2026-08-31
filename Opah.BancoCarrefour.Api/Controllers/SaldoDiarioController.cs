@@ -91,11 +91,23 @@ namespace Opah.BancoCarrefour.Api.Controllers
         [HttpGet("list")]
         [ProducesResponseType(typeof(PaginatedResponse<GetSaldoDiarioResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> ListSaldoDiarioAsync([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> ListSaldoDiarioAsync(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] DateTime? dataInicio = null,
+            [FromQuery] DateTime? dataFim = null,
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Listando todos os saldos diários.");
 
-            var command = new ListSaldoDiarioCommand();
+            if (dataInicio.HasValue && dataFim.HasValue && dataInicio > dataFim)
+                return BadRequest("Data de início não pode ser posterior à data de fim.");
+
+            var command = new ListSaldoDiarioCommand
+            {
+                DataInicio = dataInicio,
+                DataFim = dataFim
+            };
             var response = await _mediator.Send(command, cancellationToken);
             var result = _mapper.Map<IEnumerable<GetSaldoDiarioResponse>>(response).AsQueryable();
             var paginatedList = await PaginatedList<GetSaldoDiarioResponse>.GetAsync(result, pageNumber, pageSize);

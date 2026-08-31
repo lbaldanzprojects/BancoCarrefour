@@ -36,13 +36,24 @@ public class ListLancamentosHandler : IRequestHandler<ListLancamentosCommand, IE
     {
         _logger.LogInformation("Iniciando o processo de listagem de lançamentos.");
 
-        var entity = await _query.GetAllAsync(cancellationToken);
+        var possuiFiltro = command.DataInicio.HasValue || command.DataFim.HasValue || command.Tipo.HasValue;
+
+        var entity = possuiFiltro
+            ? await _query.GetAllAsync(MontarFiltro(command), cancellationToken)
+            : await _query.GetAllAsync(cancellationToken);
+
         var result = _mapper.Map<IEnumerable<GetLancamentosResult>>(entity);
 
         _logger.LogInformation("Listagem de lançamentos concluída com {Count} registros encontrados.", result.Count());
 
         return result;
     }
+
+    private static System.Linq.Expressions.Expression<Func<LancamentosEntity, bool>> MontarFiltro(ListLancamentosCommand command)
+        => e =>
+            (!command.DataInicio.HasValue || e.DataLancamento >= command.DataInicio.Value) &&
+            (!command.DataFim.HasValue || e.DataLancamento <= command.DataFim.Value) &&
+            (!command.Tipo.HasValue || e.Tipo == command.Tipo.Value);
 
     #endregion
 }
